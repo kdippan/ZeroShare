@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelVault Drop | Secure P2P File Transfer</title>
+    
+    <meta name="description" content="Zero-knowledge, end-to-end encrypted peer-to-peer file transfer directly in your browser.">
+    <meta name="theme-color" content="#0f172a">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body data-theme="dark">
+    <div class="ambient-background"></div>
+
+    <nav class="navbar animate-nav">
+        <div class="container nav-container">
+            <a href="#" class="brand">
+                <i data-lucide="zap" class="brand-icon"></i>
+                <span>PixelVault Drop</span>
+            </a>
+            <div class="status-badge" id="connectionStatus">
+                <span class="dot disconnected"></span> Waiting...
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header class="page-header animate-hero">
+            <h1 class="gradient-text">Zero-Knowledge Transfer</h1>
+            <p>Direct, encrypted browser-to-browser file sharing. No servers. No limits.</p>
+        </header>
+
+        <article class="card glass-panel animate-card" id="mainPanel">
+            
+            <div id="setupSection" class="section-active">
+                <h2 class="section-title"><i data-lucide="link"></i> Secure Connection</h2>
+                <p class="subtitle">Generate a secure room or paste a friend's ID to connect.</p>
+                
+                <div class="id-display-box">
+                    <span>Your Secure ID:</span>
+                    <strong id="myPeerId">Generating...</strong>
+                    <button class="icon-btn" id="copyIdBtn" title="Copy ID"><i data-lucide="copy"></i></button>
+                </div>
+
+                <div class="input-group" style="margin-top: 2rem;">
+                    <label for="targetPeerId">Connect to Peer</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="targetPeerId" placeholder="Paste peer ID here...">
+                        <button id="connectBtn" class="btn-primary" style="width: auto;">Connect</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="transferSection" style="display: none;">
+                <h2 class="section-title"><i data-lucide="lock"></i> E2EE Active</h2>
+                <p class="subtitle" style="color: #10b981;">Connection established. AES-GCM keys exchanged.</p>
+
+                <div class="file-upload-wrapper" style="margin-top: 1.5rem;">
+                    <input type="file" id="fileInput">
+                    <div class="file-upload-visual">
+                        <i data-lucide="upload-cloud" style="width: 32px; height: 32px;"></i>
+                        <span>Select file to securely encrypt and send</span>
+                    </div>
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none; margin-top: 1.5rem;">
+                    <div class="progress-info">
+                        <span id="transferLabel">Sending file...</span>
+                        <span id="transferPercent">0%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" id="progressBar"></div>
+                    </div>
+                </div>
+
+                <div id="receivedFiles" style="margin-top: 2rem;"></div>
+            </div>
+
+        </article>
+    </main>
+
+    <script src="assets/js/app.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
