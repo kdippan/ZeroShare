@@ -3,19 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PixelVault Drop | Secure P2P File Transfer</title>
+    <title>ZeroShare | Secure P2P File Transfer</title>
+    <meta name="description" content="ZeroShare is a browser-based, zero-knowledge peer-to-peer file sharing application. Send large files securely with AES-256 encryption.">
+    <meta name="keywords" content="P2P file transfer, WebRTC, secure file sharing, zero-knowledge, AES-256, Dippan Bhusal">
+    <meta name="author" content="Dippan Bhusal">
+    <link rel="canonical" href="https://zeroshare-io.vercel.app/">
     
-    <meta name="description" content="Zero-knowledge, end-to-end encrypted peer-to-peer file transfer directly in your browser.">
-    <meta name="theme-color" content="#0f172a">
+    <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64x64.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="icons/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="icons/favicon-128x128.png">
+    <link rel="apple-touch-icon" sizes="57x57" href="icons/favicon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="icons/favicon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="icons/favicon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="icons/favicon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="icons/favicon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="icons/favicon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icons/favicon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/favicon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/favicon-167x167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/favicon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="256x256" href="icons/favicon-256x256.png">
+    <link rel="icon" type="image/png" sizes="384x384" href="icons/favicon-384x384.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/favicon-512x512.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="icons/favicon-144x144.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-    
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body data-theme="dark">
@@ -23,72 +47,82 @@
 
     <nav class="navbar animate-nav">
         <div class="container nav-container">
-            <a href="#" class="brand">
-                <i data-lucide="zap" class="brand-icon"></i>
-                <span>PixelVault Drop</span>
+            <a href="index.html" class="brand">
+                <i data-lucide="shield" class="brand-icon"></i>
+                <span>ZeroShare</span>
             </a>
-            <div class="status-badge" id="connectionStatus">
-                <span class="dot disconnected"></span> Waiting...
+            <div class="nav-links">
+                <a href="ZeroShare.html" class="btn-primary" style="text-decoration: none; padding: 0.5rem 1.2rem;">Launch App</a>
             </div>
         </div>
     </nav>
 
     <main class="container">
         <header class="page-header animate-hero">
-            <h1 class="gradient-text">Zero-Knowledge Transfer</h1>
-            <p>Direct, encrypted browser-to-browser file sharing. No servers. No limits.</p>
+            <h1 class="gradient-text">Absolute Privacy. Zero Servers.</h1>
+            <p>Direct, encrypted browser-to-browser file sharing using advanced WebRTC and Web Crypto APIs.</p>
+            <div style="margin-top: 2rem;">
+                <a href="ZeroShare.html" class="btn-primary" style="text-decoration: none; padding: 1rem 2rem; font-size: 1.1rem;">Start Sharing Now</a>
+            </div>
         </header>
 
-        <article class="card glass-panel animate-card" id="mainPanel">
+        <section class="card glass-panel seo-content animate-card">
+            <h2 class="section-title">About ZeroShare Technology</h2>
             
-            <div id="setupSection" class="section-active">
-                <h2 class="section-title"><i data-lucide="link"></i> Secure Connection</h2>
-                <p class="subtitle">Generate a secure room or paste a friend's ID to connect.</p>
-                
-                <div class="id-display-box">
-                    <span>Your Secure ID:</span>
-                    <strong id="myPeerId">Generating...</strong>
-                    <button class="icon-btn" id="copyIdBtn" title="Copy ID"><i data-lucide="copy"></i></button>
-                </div>
+            <div style="margin-top: 1.5rem;">
+                <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">What is ZeroShare?</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">ZeroShare is a state-of-the-art P2P (Peer-to-Peer) file transfer application operating entirely within your browser. It allows you to send files of any size to another device securely.</p>
 
-                <div class="input-group" style="margin-top: 2rem;">
-                    <label for="targetPeerId">Connect to Peer</label>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <input type="text" id="targetPeerId" placeholder="Paste peer ID here...">
-                        <button id="connectBtn" class="btn-primary" style="width: auto;">Connect</button>
-                    </div>
+                <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">How it Works</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Using the native WebRTC protocol, ZeroShare establishes a direct tunnel between the sender and receiver. Before any file chunk leaves your device, it is encrypted locally using the Web Crypto API with AES-GCM 256-bit encryption. The Elliptic Curve Diffie-Hellman (ECDH) key exchange ensures that only the intended recipient can decrypt the data.</p>
+
+                <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">Why ZeroShare?</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Traditional file-sharing services upload your data to a central server, exposing it to potential breaches and imposing strict file size limits. ZeroShare eliminates the middleman. Your files are never stored on any external database, guaranteeing absolute zero-knowledge privacy and unlimited transfer potential.</p>
+
+                <h3 style="color: var(--text-main); margin-bottom: 0.5rem;">When was it Developed?</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Launched in 2026, this utility was engineered to address modern concerns regarding corporate data harvesting and cloud storage vulnerabilities.</p>
+            </div>
+        </section>
+
+        <section class="card glass-panel animate-card">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-list" style="margin-top: 1.5rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    <strong style="color: var(--text-main); display: block; margin-bottom: 0.2rem;">Is there a file size limit?</strong>
+                    <p style="color: var(--text-muted);">No. Because files are streamed directly between devices in small 64KB chunks and are not stored on our servers, you can send files as large as your local storage allows.</p>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <strong style="color: var(--text-main); display: block; margin-bottom: 0.2rem;">Can ZeroShare see my files?</strong>
+                    <p style="color: var(--text-muted);">Absolutely not. The encryption keys are generated and held exclusively by the participating browsers. We have no mathematical way to decrypt your transfers.</p>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <strong style="color: var(--text-main); display: block; margin-bottom: 0.2rem;">Why do I need the 6-character code?</strong>
+                    <p style="color: var(--text-muted);">The code is a temporary routing identifier used by our lightweight signaling server to help the two browsers find each other's IP addresses before the secure P2P tunnel is built.</p>
                 </div>
             </div>
+        </section>
 
-            <div id="transferSection" style="display: none;">
-                <h2 class="section-title"><i data-lucide="lock"></i> E2EE Active</h2>
-                <p class="subtitle" style="color: #10b981;">Connection established. AES-GCM keys exchanged.</p>
-
-                <div class="file-upload-wrapper" style="margin-top: 1.5rem;">
-                    <input type="file" id="fileInput">
-                    <div class="file-upload-visual">
-                        <i data-lucide="upload-cloud" style="width: 32px; height: 32px;"></i>
-                        <span>Select file to securely encrypt and send</span>
-                    </div>
-                </div>
-
-                <div class="progress-container" id="progressContainer" style="display: none; margin-top: 1.5rem;">
-                    <div class="progress-info">
-                        <span id="transferLabel">Sending file...</span>
-                        <span id="transferPercent">0%</span>
-                    </div>
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" id="progressBar"></div>
-                    </div>
-                </div>
-
-                <div id="receivedFiles" style="margin-top: 2rem;"></div>
+        <section class="card glass-panel animate-card" style="text-align: center;">
+            <h2 class="section-title" style="justify-content: center;">Developed by Dippan Bhusal</h2>
+            <p style="color: var(--text-muted); margin-top: 1rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+                Full-Stack Web Developer specializing in secure, high-performance web utilities, cryptographic applications, and modern UI/UX design. Built explicitly for individuals who prioritize digital privacy and seamless technology.
+            </p>
+            <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem;">
+                <a href="https://github.com/kdippan" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 600;"><i data-lucide="github"></i> GitHub</a>
+                <a href="https://www.linkedin.com/in/kdippan" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: 600;"><i data-lucide="linkedin"></i> Linkedin</a>
             </div>
-
-        </article>
+        </section>
     </main>
 
-    <script src="assets/js/app.js"></script>
-    <script>lucide.createIcons();</script>
+    <script>
+        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', () => {
+            const tl = anime.timeline({ easing: 'easeOutExpo', duration: 800 });
+            tl.add({ targets: '.animate-nav', translateY: [-20, 0], opacity: [0, 1] })
+              .add({ targets: '.animate-hero h1', translateY: [30, 0], opacity: [0, 1] }, '-=400')
+              .add({ targets: '.animate-hero p', translateY: [20, 0], opacity: [0, 1] }, '-=600')
+              .add({ targets: '.animate-card', translateY: [40, 0], opacity: [0, 1], delay: anime.stagger(150) }, '-=500');
+        });
+    </script>
 </body>
 </html>
