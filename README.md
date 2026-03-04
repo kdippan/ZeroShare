@@ -62,7 +62,7 @@ Because ZeroShare is a 100% client-side application, running it locally requires
    Navigate to ```http://localhost:8000```
 ☕ Support the Developer
 If you found this project helpful, learned something from the code, or just want to support my work as a student developer, consider buying me a coffee!
-<a href="https://www.google.com/search?q=https://www.buymeacoffee.com/dippanbhusal" target="_blank"><img src="https://www.google.com/search?q=https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+<a href="https://www.google.com/search?q=https://www.buymeacoffee.com/dippanbhusal" target="_blank"><img src="https://i.postimg.cc/8zx4ftXP/49859-removebg-preview.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 👨‍💻 Author
 Dippan Bhusal
  * GitHub: @kdippan
