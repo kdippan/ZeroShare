@@ -19,10 +19,13 @@ let peer = null;
 let conn = null;
 let localKeyPair = null;
 let sharedAESKey = null;
+
+// File Receiving State
 let receiveBuffer = [];
 let incomingMeta = null;
 let receivedBytes = 0;
-const CHUNK_SIZE = 64 * 1024; 
+
+const CHUNK_SIZE = 64 * 1024; // 64KB per chunk
 
 // =====================================================================
 // 1. Web Crypto API: Key Generation & Derivation
@@ -38,13 +41,18 @@ async function initCrypto() {
 
 async function deriveAESKey(peerJwk) {
     const peerPubKey = await crypto.subtle.importKey(
-        "jwk", peerJwk, { name: "ECDH", namedCurve: "P-256" }, true, []
+        "jwk", 
+        peerJwk, 
+        { name: "ECDH", namedCurve: "P-256" }, 
+        true, 
+        []
     );
     return await crypto.subtle.deriveKey(
         { name: "ECDH", public: peerPubKey },
         localKeyPair.privateKey,
         { name: "AES-GCM", length: 256 },
-        true, ["encrypt", "decrypt"]
+        true, 
+        ["encrypt", "decrypt"]
     );
 }
 
@@ -55,22 +63,41 @@ async function deriveAESKey(peerJwk) {
 function generateShortCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
-    for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+    for (let i = 0; i < 6; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
     return result;
 }
 
 async function initPeer() {
     await initCrypto();
 
-    // Request a specific, easy-to-read 6-character ID instead of a long UUID
     const shortId = generateShortCode();
-    peer = new Peer(shortId, { debug: 2 });
+    
+    // We explicitly define a robust ICE configuration here
+    const peerConfig = {
+        debug: 2,
+        config: {
+            'iceServers': [
+                // Google's Public STUN servers
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                // Twilio's Public STUN server
+                { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+        }
+    };
+
+    // Initialize PeerJS with the new STUN list
+    peer = new Peer(shortId, peerConfig);
 
     peer.on('open', (id) => {
         myPeerIdEl.textContent = id;
     });
 
-    // Handle Mobile Disconnects automatically
     peer.on('disconnected', () => {
         console.log("Signaling server disconnected. Reconnecting...");
         if (!peer.destroyed) {
@@ -100,6 +127,7 @@ function setupConnectionHandlers() {
         updateStatus(true);
         connectBtn.textContent = "Connected";
         
+        // Export our public key and send it to the peer
         const exportedPubKey = await crypto.subtle.exportKey("jwk", localKeyPair.publicKey);
         conn.send({ type: 'PUB_KEY', key: exportedPubKey });
     });
@@ -107,6 +135,7 @@ function setupConnectionHandlers() {
     conn.on('data', async (msg) => {
         if (msg.type === 'PUB_KEY') {
             sharedAESKey = await deriveAESKey(msg.key);
+            console.log("Secure AES-GCM Key Derived Successfully!");
             showTransferUI();
         } 
         else if (msg.type === 'META') {
@@ -120,7 +149,9 @@ function setupConnectionHandlers() {
             try {
                 const iv = new Uint8Array(msg.iv);
                 const decryptedBuffer = await crypto.subtle.decrypt(
-                    { name: "AES-GCM", iv: iv }, sharedAESKey, msg.data
+                    { name: "AES-GCM", iv: iv }, 
+                    sharedAESKey, 
+                    msg.data
                 );
                 receiveBuffer.push(decryptedBuffer);
                 receivedBytes += msg.originalSize; 
@@ -134,6 +165,7 @@ function setupConnectionHandlers() {
             setTimeout(() => {
                 const blob = new Blob(receiveBuffer, { type: incomingMeta.fileType });
                 createDownloadableFile(blob, incomingMeta.name);
+                
                 transferLabel.textContent = "Transfer Complete!";
                 progressBar.style.background = "#10b981"; 
                 setTimeout(() => { progressContainer.style.display = 'none'; }, 3000);
@@ -149,7 +181,7 @@ function setupConnectionHandlers() {
 }
 
 // =====================================================================
-// 3. File Processing & UI Logic
+// 3. File Processing & Sending
 // =====================================================================
 
 fileInput.addEventListener('change', async (e) => {
@@ -163,41 +195,55 @@ fileInput.addEventListener('change', async (e) => {
     conn.send({ type: 'META', name: file.name, size: file.size, fileType: file.type });
 
     let offset = 0;
+    
     while (offset < file.size) {
         const chunk = file.slice(offset, offset + CHUNK_SIZE);
         const arrayBuffer = await chunk.arrayBuffer();
+        
         const iv = crypto.getRandomValues(new Uint8Array(12));
+        
         const encryptedChunk = await crypto.subtle.encrypt(
-            { name: "AES-GCM", iv: iv }, sharedAESKey, arrayBuffer
+            { name: "AES-GCM", iv: iv }, 
+            sharedAESKey, 
+            arrayBuffer
         );
 
         conn.send({ 
-            type: 'CHUNK', iv: Array.from(iv), data: encryptedChunk, originalSize: arrayBuffer.byteLength
+            type: 'CHUNK', 
+            iv: Array.from(iv), 
+            data: encryptedChunk,
+            originalSize: arrayBuffer.byteLength
         });
 
         offset += CHUNK_SIZE;
         updateProgress(offset, file.size);
+        
         await new Promise(r => setTimeout(r, 5)); 
     }
+
     conn.send({ type: 'EOF' });
     transferLabel.textContent = "Sent successfully!";
     progressBar.style.background = "#10b981";
     fileInput.value = ''; 
 });
 
+// =====================================================================
+// 4. UI & Utility Functions
+// =====================================================================
+
 connectBtn.addEventListener('click', () => {
     const targetId = targetPeerIdInput.value.trim().toUpperCase();
     if (!targetId) return;
     
     connectBtn.textContent = "Connecting...";
-    connectBtn.disabled = true;
+    connectBtn.disabled = true; 
     
     conn = peer.connect(targetId, { reliable: true });
     
-    // Fallback timeout in case the short code is wrong
+    // Fallback timeout in case connection hangs
     setTimeout(() => {
         if (statusDot.className !== 'dot connected') {
-            alert("Connection timed out. Ensure the 6-character code is correct and the other device is awake.");
+            alert("Connection timed out. Ensure the 6-character code is correct and the other device is online.");
             connectBtn.textContent = "Connect";
             connectBtn.disabled = false;
             if (conn) conn.close();
@@ -230,11 +276,21 @@ function updateStatus(isConnected) {
 
 function showTransferUI() {
     anime({
-        targets: '#setupSection', opacity: 0, translateY: -20, duration: 400, easing: 'easeInQuad',
+        targets: '#setupSection',
+        opacity: 0,
+        translateY: -20,
+        duration: 400,
+        easing: 'easeInQuad',
         complete: () => {
             setupSection.style.display = 'none';
             transferSection.style.display = 'block';
-            anime({ targets: '#transferSection', opacity: [0, 1], translateY: [20, 0], duration: 600, easing: 'easeOutExpo' });
+            anime({
+                targets: '#transferSection',
+                opacity: [0, 1],
+                translateY: [20, 0],
+                duration: 600,
+                easing: 'easeOutExpo'
+            });
         }
     });
 }
@@ -247,11 +303,20 @@ function updateProgress(current, total) {
 
 function createDownloadableFile(blob, filename) {
     const url = URL.createObjectURL(blob);
+    
     const fileItem = document.createElement('div');
     fileItem.className = 'received-item';
-    fileItem.innerHTML = `<a href="${url}" download="${filename}"><i data-lucide="file-check"></i> ${filename} (Decrypted)</a><span style="color: var(--text-muted); font-size: 0.8rem;">Ready</span>`;
+    fileItem.innerHTML = `
+        <a href="${url}" download="${filename}">
+            <i data-lucide="file-check"></i> 
+            ${filename} (Decrypted)
+        </a>
+        <span style="color: var(--text-muted); font-size: 0.8rem;">Ready</span>
+    `;
+    
     receivedFilesDiv.appendChild(fileItem);
     lucide.createIcons();
 }
 
+// Bootstrap Application
 initPeer();
