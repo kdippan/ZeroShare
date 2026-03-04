@@ -57,7 +57,7 @@ async function deriveAESKey(peerJwk) {
 }
 
 // =====================================================================
-// 2. PeerJS & WebRTC Setup
+// 2. PeerJS & WebRTC Setup with Metered TURN Servers
 // =====================================================================
 
 function generateShortCode() {
@@ -74,24 +74,41 @@ async function initPeer() {
 
     const shortId = generateShortCode();
     
-    // We explicitly define a robust ICE configuration here
+    // Injecting your Metered TURN credentials into the PeerJS config
     const peerConfig = {
         debug: 2,
         config: {
             'iceServers': [
-                // Google's Public STUN servers
+                // Primary STUN check (fastest, tries direct connection first)
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                // Twilio's Public STUN server
-                { urls: 'stun:global.stun.twilio.com:3478' }
+                { urls: "stun:stun.relay.metered.ca:80" },
+                
+                // Fallback TURN relays for strict mobile networks
+                {
+                    urls: "turn:global.relay.metered.ca:80",
+                    username: "720b913bfa71fc6b933ac20a",
+                    credential: "MROrNaIhYikme2P4",
+                },
+                {
+                    urls: "turn:global.relay.metered.ca:80?transport=tcp",
+                    username: "720b913bfa71fc6b933ac20a",
+                    credential: "MROrNaIhYikme2P4",
+                },
+                {
+                    urls: "turn:global.relay.metered.ca:443",
+                    username: "720b913bfa71fc6b933ac20a",
+                    credential: "MROrNaIhYikme2P4",
+                },
+                {
+                    urls: "turns:global.relay.metered.ca:443?transport=tcp",
+                    username: "720b913bfa71fc6b933ac20a",
+                    credential: "MROrNaIhYikme2P4",
+                }
             ]
         }
     };
 
-    // Initialize PeerJS with the new STUN list
+    // Initialize PeerJS with the robust STUN/TURN list
     peer = new Peer(shortId, peerConfig);
 
     peer.on('open', (id) => {
