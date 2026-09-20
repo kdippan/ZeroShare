@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "g": "^2.0.1",
+    "live-server": "^1.2.2"
+  }
+}
