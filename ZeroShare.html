@@ -2,204 +2,413 @@
 <html lang="en">
 <head>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3159539127750553"
-     crossorigin="anonymous"></script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZeroShare | Web App</title>
-<link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
-<link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
-<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48x48.png">
-<link rel="icon" type="image/png" sizes="64x64" href="/icons/favicon-64x64.png">
-<link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png">
-<link rel="icon" type="image/png" sizes="128x128" href="/icons/favicon-128x128.png">
-<link rel="apple-touch-icon" sizes="57x57" href="/icons/favicon-57x57.png">
-<link rel="apple-touch-icon" sizes="60x60" href="/icons/favicon-60x60.png">
-<link rel="apple-touch-icon" sizes="72x72" href="/icons/favicon-72x72.png">
-<link rel="apple-touch-icon" sizes="76x76" href="/icons/favicon-76x76.png">
-<link rel="apple-touch-icon" sizes="114x114" href="/icons/favicon-114x114.png">
-<link rel="apple-touch-icon" sizes="120x120" href="/icons/favicon-120x120.png">
-<link rel="apple-touch-icon" sizes="144x144" href="/icons/favicon-144x144.png">
-<link rel="apple-touch-icon" sizes="152x152" href="/icons/favicon-152x152.png">
-<link rel="apple-touch-icon" sizes="167x167" href="/icons/favicon-167x167.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="/icons/favicon-192x192.png">
-<link rel="icon" type="image/png" sizes="256x256" href="/icons/favicon-256x256.png">
-<link rel="icon" type="image/png" sizes="384x384" href="/icons/favicon-384x384.png">
-<link rel="icon" type="image/png" sizes="512x512" href="/icons/favicon-512x512.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="msapplication-TileColor" content="#ffffff">
-<meta name="msapplication-TileImage" content="/icons/favicon-144x144.png">
-<meta name="theme-color" content="#0f172a">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-<link rel="stylesheet" href="assets/css/style.css">
-<script>
-  (function() {
-    const hostname = window.location.hostname.toLowerCase();
-    let measurementId = '';
+    crossorigin="anonymous"></script>
 
-    // Check for Custom Domain (includes both with and without 'www')
-    if (hostname === 'www.zeroshare.dippanbhusal.tech' || hostname === 'zeroshare.dippanbhusal.tech') {
-      measurementId = 'G-XTSQ4BN2E0';
-    } 
-    // Check for Vercel Domain
-    else if (hostname === 'zeroshare-io.vercel.app') {
-      measurementId = 'G-4TK1W8M38E';
-    }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    // If a matching domain is found, inject and initialize Google Analytics
-    if (measurementId) {
-      const gtagScript = document.createElement('script');
-      gtagScript.async = true;
-      gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
-      document.head.appendChild(gtagScript);
+  <title>ZeroShare | Web App</title>
 
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', measurementId);
-      
-      console.log('Analytics initialized for: ' + measurementId);
-    }
-  })();
-</script>
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/icons/favicon-64x64.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="/icons/favicon-128x128.png">
+
+  <link rel="apple-touch-icon" sizes="57x57" href="/icons/favicon-57x57.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="/icons/favicon-60x60.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="/icons/favicon-72x72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/icons/favicon-76x76.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="/icons/favicon-114x114.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/icons/favicon-120x120.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="/icons/favicon-144x144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/icons/favicon-152x152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="/icons/favicon-167x167.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/favicon-180x180.png">
+
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="/icons/favicon-256x256.png">
+  <link rel="icon" type="image/png" sizes="384x384" href="/icons/favicon-384x384.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/icons/favicon-512x512.png">
+
+  <link rel="manifest" href="/site.webmanifest">
+
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="/icons/favicon-144x144.png">
+  <meta name="theme-color" content="#0f172a">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  >
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <link rel="stylesheet" href="assets/css/style.css">
+
+  <script>
+    (function() {
+      const hostname = window.location.hostname.toLowerCase();
+      let measurementId = '';
+
+      if (
+        hostname === 'www.zeroshare.dippanbhusal.tech' ||
+        hostname === 'zeroshare.dippanbhusal.tech'
+      ) {
+        measurementId = 'G-XTSQ4BN2E0';
+      } else if (hostname === 'zeroshare-io.vercel.app') {
+        measurementId = 'G-4TK1W8M38E';
+      }
+
+      if (measurementId) {
+        const gtagScript = document.createElement('script');
+
+        gtagScript.async = true;
+        gtagScript.src =
+          'https://www.googletagmanager.com/gtag/js?id=' + measurementId;
+
+        document.head.appendChild(gtagScript);
+
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+        gtag('config', measurementId);
+
+        console.log(
+          'Analytics initialized for: ' + measurementId
+        );
+      }
+    })();
+  </script>
 
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebApplication",
-      "name": "ZeroShare",
-      "url": "https://zeroshare-io.vercel.app/",
-      "description": "ZeroShare is a zero-knowledge, browser-based peer-to-peer file transfer tool utilizing WebRTC and AES-256 encryption.",
-      "applicationCategory": "UtilityApplication",
-      "operatingSystem": "All",
-      "browserRequirements": "Requires WebRTC and Web Crypto API support.",
-      "author": {
-        "@type": "Person",
-        "name": "Dippan Bhusal",
-        "url": "https://dippanbhusal.tech",
-        "sameAs": [
-          "https://github.com/kdippan",
-          "https://linkedin.com/in/kdippan"
-        ]
-      },
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    },
-    {
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "Is there a file size limit on ZeroShare?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "No. Because files are streamed in 64KB chunks and not loaded entirely into RAM, you can send files of unlimited size, governed only by your network connection."
-          }
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "name": "ZeroShare",
+        "url": "https://zeroshare-io.vercel.app/",
+        "description": "ZeroShare is a browser-based peer-to-peer file transfer tool using WebRTC and AES-256-GCM encryption.",
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires WebRTC and Web Crypto API support.",
+        "author": {
+          "@type": "Person",
+          "name": "Dippan Bhusal",
+          "url": "https://dippanbhusal.tech",
+          "sameAs": [
+            "https://github.com/kdippan",
+            "https://linkedin.com/in/kdippan"
+          ]
         },
-        {
-          "@type": "Question",
-          "name": "Can ZeroShare or its developers see my files?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Absolutely not. ZeroShare uses a zero-knowledge architecture. AES-256 encryption keys are generated locally in your browser and are never transmitted to any server."
-          }
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
         }
-      ]
-    }
-  ]
-}
-</script>
-
-</head>
-<body data-theme="dark">
-<div class="ambient-background"></div>
-<nav class="navbar">
-<div class="container nav-container">
-<a href="/" class="brand"><i data-lucide="zap" class="brand-icon"></i><span>ZeroShare</span></a>
-<div class="nav-links">
-<button id="tabApp" class="nav-btn active">App</button>
-<button id="tabHistory" class="nav-btn">History</button>
-</div>
-<div class="status-badge" id="connectionStatus"><span class="dot disconnected"></span> Waiting...</div>
-</div>
-</nav>
-<main class="container">
-<div id="appView">
-<header class="page-header">
-<h1 class="gradient-text">E2EE File Drop</h1>
-</header>
-<article class="card glass-panel" id="mainPanel">
-<div id="setupSection" class="section-active">
-<h2 class="section-title"><i data-lucide="link"></i> Secure Connection</h2>
-<div class="id-display-box">
-<span>Your ID:</span><strong id="myPeerId">Generating...</strong>
-<button class="icon-btn" id="copyIdBtn"><i data-lucide="copy"></i></button>
-</div>
-<div class="input-group" style="margin-top: 2rem;">
-<label for="targetPeerId">Connect to Peer</label>
-<div style="display: flex; gap: 0.5rem;">
-<input type="text" id="targetPeerId" placeholder="Paste ID...">
-<button id="connectBtn" class="btn-primary" style="width: auto;">Connect</button>
-</div>
-</div>
-</div>
-<div id="transferSection" style="display: none;">
-<h2 class="section-title"><i data-lucide="lock"></i> Active</h2>
-<div class="file-upload-wrapper" style="margin-top: 1.5rem;">
-<input type="file" id="fileInput">
-<div class="file-upload-visual">
-<i data-lucide="upload-cloud" style="width: 32px; height: 32px;"></i>
-<span>Select file to encrypt & send</span>
-</div>
-</div>
-<div class="progress-container" id="progressContainer" style="display: none; margin-top: 1.5rem;">
-<div class="progress-info">
-<span id="transferLabel">Sending...</span>
-<span id="transferPercent">0%</span>
-</div>
-<div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
-</div>
-<div id="receivedFiles" style="margin-top: 2rem;"></div>
-</div>
-</article>
-</div>
-<div id="historyView" style="display: none;">
-<header class="page-header">
-<h1 class="gradient-text">Activity Log</h1>
-</header>
-<article class="card glass-panel">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-<h2 class="section-title"><i data-lucide="clock"></i> Recent Transfers</h2>
-<button id="clearHistoryBtn" class="icon-btn" style="color: #ef4444;"><i data-lucide="trash-2"></i></button>
-</div>
-<div id="historyList" class="history-list"></div>
-</article>
-</div>
-</main>
-<footer class="site-footer">
-<p>&copy; 2026 Dippan Bhusal | <a href="https://github.com/sponsors/kdippan">GitHub Sponser </a></p>
-</footer>
-<script src="assets/js/app.js"></script>
-<script>lucide.createIcons();</script>
-<script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="dippanbhusal" data-description="Support me on Buy me a coffee!" data-message="Buymeacoffe" data-color="#5F7FFF" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/services.js')
-        .then(reg => console.log('Service Worker registered!', reg))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    });
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Is there a file size limit on ZeroShare?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "ZeroShare supports large file transfers, subject to the browser, available memory, storage, and network conditions."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can ZeroShare or its developers see my files?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Files are encrypted locally in the browser using AES-256-GCM before being transferred between peers."
+            }
+          }
+        ]
+      }
+    ]
   }
-</script>
+  </script>
+</head>
+
+<body data-theme="dark">
+
+  <div class="ambient-background"></div>
+
+  <nav class="navbar">
+    <div class="container nav-container">
+
+      <a href="/" class="brand">
+        <i data-lucide="zap" class="brand-icon"></i>
+        <span>ZeroShare</span>
+      </a>
+
+      <div class="nav-links">
+        <button id="tabApp" class="nav-btn active">
+          App
+        </button>
+
+        <button id="tabHistory" class="nav-btn">
+          History
+        </button>
+      </div>
+
+      <div class="status-badge" id="connectionStatus">
+        <span class="dot disconnected"></span>
+        Waiting...
+      </div>
+
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <div id="appView">
+
+      <header class="page-header">
+        <h1 class="gradient-text">
+          E2EE File Drop
+        </h1>
+      </header>
+
+      <article class="card glass-panel" id="mainPanel">
+
+        <div id="setupSection" class="section-active">
+
+          <h2 class="section-title">
+            <i data-lucide="link"></i>
+            Secure Connection
+          </h2>
+
+          <div class="id-display-box">
+            <span>Your ID:</span>
+
+            <strong id="myPeerId">
+              Generating...
+            </strong>
+
+            <button
+              class="icon-btn"
+              id="copyIdBtn"
+              type="button"
+              aria-label="Copy peer ID"
+            >
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
+
+          <div class="input-group connection-input-group">
+
+            <label for="targetPeerId">
+              Connect to Peer
+            </label>
+
+            <div class="connection-input">
+
+              <input
+                type="text"
+                id="targetPeerId"
+                placeholder="Paste ID..."
+                autocomplete="off"
+                spellcheck="false"
+              >
+
+              <button
+                id="connectBtn"
+                class="btn-primary"
+                type="button"
+              >
+                Connect
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div id="transferSection" style="display: none;">
+
+          <h2 class="section-title">
+            <i data-lucide="lock"></i>
+            Secure Transfer
+          </h2>
+
+
+          <div class="connection-peer">
+
+            <div class="connection-peer-icon">
+              <i data-lucide="shield-check"></i>
+            </div>
+
+            <div class="connection-peer-info">
+              <span>
+                Connected securely to
+              </span>
+
+              <strong id="connectedPeerId">
+                Peer
+              </strong>
+            </div>
+
+            <span class="connection-live">
+              <span class="dot connected"></span>
+              Connected
+            </span>
+
+          </div>
+
+
+          <div class="file-upload-wrapper">
+
+            <input
+              type="file"
+              id="fileInput"
+              aria-label="Select file to send"
+            >
+
+            <div class="file-upload-visual">
+
+              <i data-lucide="upload-cloud"></i>
+
+              <strong>
+                Select a file
+              </strong>
+
+              <span>
+                Encrypted locally before transfer
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="transferActivity"
+            class="transfer-activity"
+            aria-live="polite"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+
+    <div id="historyView" style="display: none;">
+
+      <header class="page-header">
+        <h1 class="gradient-text">
+          Activity Log
+        </h1>
+      </header>
+
+
+      <article class="card glass-panel">
+
+        <div class="history-header">
+
+          <h2 class="section-title">
+            <i data-lucide="clock"></i>
+            Recent Transfers
+          </h2>
+
+          <button
+            id="clearHistoryBtn"
+            class="icon-btn history-delete-btn"
+            type="button"
+            aria-label="Clear transfer history"
+          >
+            <i data-lucide="trash-2"></i>
+          </button>
+
+        </div>
+
+
+        <div
+          id="historyList"
+          class="history-list"
+        ></div>
+
+      </article>
+
+    </div>
+
+  </main>
+
+
+  <footer class="site-footer">
+
+    <p>
+      &copy; 2026 Dippan Bhusal |
+      <a
+        href="https://github.com/sponsors/kdippan"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        GitHub Sponsor
+      </a>
+    </p>
+
+  </footer>
+
+
+  <script src="assets/js/app.js"></script>
+
+  <script>
+    lucide.createIcons();
+  </script>
+
+
+  <script
+    data-name="BMC-Widget"
+    data-cfasync="false"
+    src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js"
+    data-id="dippanbhusal"
+    data-description="Support me on Buy me a coffee!"
+    data-message="Buy me a coffee"
+    data-color="#5F7FFF"
+    data-position="Right"
+    data-x_margin="18"
+    data-y_margin="18"
+  ></script>
+
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+
+        navigator.serviceWorker.register('/services.js')
+          .then(reg => {
+            console.log(
+              'Service Worker registered!',
+              reg
+            );
+          })
+          .catch(err => {
+            console.error(
+              'Service Worker registration failed:',
+              err
+            );
+          });
+
+      });
+    }
+  </script>
 
 </body>
 </html>
