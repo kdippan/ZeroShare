@@ -1,70 +1,76 @@
 export default async function handler(req, res) {
-    if (req.method !== "GET") {
-        return res.status(405).json({
-            error: "Method not allowed"
-        });
+  if (req.method !== "GET") {
+    return res.status(405).json({
+      error: "Method not allowed",
+    });
+  }
+
+  try {
+    const {
+      METERED_DOMAIN,
+      METERED_API_KEY,
+      EXPRESSTURN_USERNAME,
+      EXPRESSTURN_PASSWORD,
+    } = process.env;
+
+    if (
+      !METERED_DOMAIN ||
+      !METERED_API_KEY ||
+      !EXPRESSTURN_USERNAME ||
+      !EXPRESSTURN_PASSWORD
+    ) {
+      return res.status(500).json({
+        error: "TURN server configuration is incomplete",
+      });
+    }
+    const meteredUrl =
+      `https://${METERED_DOMAIN}/api/v1/turn/credentials` +
+      `?apiKey=${encodeURIComponent(METERED_API_KEY)}`;
+
+    const meteredResponse = await fetch(meteredUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+
+    if (!meteredResponse.ok) {
+      throw new Error(
+        `Metered request failed: HTTP ${meteredResponse.status}`
+      );
     }
 
-    const meteredDomain = process.env.METERED_DOMAIN;
-    const meteredApiKey = process.env.METERED_API_KEY;
+    const meteredServers = await meteredResponse.json();
 
-    if (!meteredDomain || !meteredApiKey) {
-        console.error("Missing Metered environment variables.");
-
-        return res.status(500).json({
-            error: "TURN service is not configured."
-        });
+    if (!Array.isArray(meteredServers)) {
+      throw new Error("Invalid response from Metered");
     }
+    const expressTurnServer = {
+      urls: [
+        "turn:free.expressturn.com:3478?transport=udp",
+        "turn:free.expressturn.com:3478?transport=tcp",
+      ],
+      username: EXPRESSTURN_USERNAME,
+      credential: EXPRESSTURN_PASSWORD,
+    };
+    const iceServers = [
+      ...meteredServers,
+      expressTurnServer,
+    ];
 
-    try {
-        const domain = meteredDomain
-            .replace(/^https?:\/\//, "")
-            .replace(/\/+$/, "");
+    return res.status(200).json({
+      iceServers,
+      providers: {
+        metered: true,
+        expressturn: true,
+      },
+    });
+  } catch (error) {
+    console.error("TURN credential error:", error);
 
-        const url =
-            `https://${domain}/api/v1/turn/credentials` +
-            `?apiKey=${encodeURIComponent(meteredApiKey)}`;
-
-        const response = await fetch(url, {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-
-            console.error(
-                "Metered API error:",
-                response.status,
-                errorText
-            );
-
-            return res.status(502).json({
-                error: "Unable to obtain TURN configuration."
-            });
-        }
-
-        const iceServers = await response.json();
-
-        if (!Array.isArray(iceServers) || iceServers.length === 0) {
-            console.error("Metered returned invalid ICE configuration.");
-
-            return res.status(502).json({
-                error: "Invalid TURN configuration."
-            });
-        }
-
-        return res.status(200).json({
-            iceServers
-        });
-
-    } catch (error) {
-        console.error("TURN endpoint error:", error);
-
-        return res.status(500).json({
-            error: "TURN service unavailable."
-        });
-    }
+    return res.status(500).json({
+      error: "Unable to obtain TURN configuration",
+    });
+  }
 }

@@ -1,244 +1,249 @@
 const myPeerIdEl = document.getElementById("myPeerId");
-const targetPeerIdInput = document.getElementById("targetPeerId");
+const targetPeerIdEl = document.getElementById("targetPeerId");
 const connectBtn = document.getElementById("connectBtn");
 const copyIdBtn = document.getElementById("copyIdBtn");
 const connectionStatus = document.getElementById("connectionStatus");
-const statusDot = connectionStatus?.querySelector(".dot");
-
+const statusDot = document.getElementById("statusDot");
 const setupSection = document.getElementById("setupSection");
 const transferSection = document.getElementById("transferSection");
-
 const fileInput = document.getElementById("fileInput");
-const progressContainer = document.getElementById("progressContainer");
-const progressBar = document.getElementById("progressBar");
-const transferPercent = document.getElementById("transferPercent");
-const transferLabel = document.getElementById("transferLabel");
 
-const receivedFilesDiv = document.getElementById("receivedFiles");
+const fileNameEl = document.getElementById("fileName");
+const fileSizeEl = document.getElementById("fileSize");
+const uploadProgress = document.getElementById("uploadProgress");
+const uploadProgressText = document.getElementById("uploadProgressText");
+const uploadStatus = document.getElementById("uploadStatus");
 
-const tabApp = document.getElementById("tabApp");
-const tabHistory = document.getElementById("tabHistory");
-const appView = document.getElementById("appView");
-const historyView = document.getElementById("historyView");
+const receivedFilesEl = document.getElementById("receivedFiles");
 const historyList = document.getElementById("historyList");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
-const CHUNK_SIZE = 16 * 1024; 
+
+const tabs = document.querySelectorAll("[data-tab]");
+const tabViews = document.querySelectorAll("[data-view]");
+
+const CHUNK_SIZE = 16 * 1024;
+const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
 const CONNECTION_TIMEOUT = 15000;
-const MAX_HISTORY_ITEMS = 100;
-const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; 
+
 let peer = null;
 let conn = null;
 let localKeyPair = null;
 let sharedAESKey = null;
+
 let receiveBuffer = [];
 let incomingMeta = null;
 let receivedBytes = 0;
+let incomingChunks = 0;
 
+let transferInProgress = false;
 let connectionTimer = null;
-let transferCancelled = false;
-function saveHistory(action, details) {
-    try {
-        const history = JSON.parse(
-            localStorage.getItem("zeroShareHistory") || "[]"
-        );
 
-        history.unshift({
-            action,
-            details,
-            time: new Date().toLocaleString()
-        });
+function setStatus(message, type = "idle") {
+    if (connectionStatus) {
+        connectionStatus.textContent = message;
+    }
 
-        if (history.length > MAX_HISTORY_ITEMS) {
-            history.length = MAX_HISTORY_ITEMS;
+    if (statusDot) {
+        statusDot.className = "status-dot";
+
+        if (type === "connected") {
+            statusDot.classList.add("connected");
+        } else if (type === "connecting") {
+            statusDot.classList.add("connecting");
+        } else if (type === "error") {
+            statusDot.classList.add("error");
         }
-
-        localStorage.setItem(
-            "zeroShareHistory",
-            JSON.stringify(history)
-        );
-
-        renderHistory();
-
-    } catch (error) {
-        console.error("History error:", error);
     }
 }
 
+function updateConnectionStatus(message, type = "idle") {
+    setStatus(message, type);
+}
 
-function renderHistory() {
-    if (!historyList) return;
-
-    try {
-        const history = JSON.parse(
-            localStorage.getItem("zeroShareHistory") || "[]"
-        );
-
-        historyList.replaceChildren();
-
-        if (!history.length) {
-            const empty = document.createElement("div");
-
-            empty.style.cssText =
-                "color:var(--text-muted);text-align:center;padding:1rem;";
-
-            empty.textContent = "No history found.";
-
-            historyList.appendChild(empty);
-
-            return;
-        }
-
-        history.forEach(item => {
-            const container = document.createElement("div");
-            container.className = "history-item";
-
-            const action = document.createElement("span");
-            action.className = "history-action";
-            action.textContent = item.action;
-
-            const details = document.createElement("span");
-            details.textContent = item.details;
-
-            const time = document.createElement("span");
-            time.className = "history-time";
-            time.textContent = item.time;
-
-            container.append(
-                action,
-                details,
-                time
-            );
-
-            historyList.appendChild(container);
-        });
-
-    } catch (error) {
-        console.error("Unable to render history:", error);
+function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return "0 Bytes";
     }
+
+    const units = ["Bytes", "KB", "MB", "GB", "TB"];
+    const index = Math.min(
+        Math.floor(Math.log(bytes) / Math.log(1024)),
+        units.length - 1
+    );
+
+    return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
 }
 
+function generateShortCode(length = 8) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const values = new Uint32Array(length);
 
-if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener("click", () => {
-        localStorage.removeItem("zeroShareHistory");
-        renderHistory();
-    });
+    crypto.getRandomValues(values);
+
+    let result = "";
+
+    for (let i = 0; i < length; i++) {
+        result += chars[values[i] % chars.length];
+    }
+
+    return result;
 }
 
-if (tabApp && tabHistory) {
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
 
-    tabApp.addEventListener("click", () => {
-        tabApp.classList.add("active");
-        tabHistory.classList.remove("active");
+    const chunkSize = 0x8000;
 
-        appView.style.display = "block";
-        historyView.style.display = "none";
-    });
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(
+            ...bytes.subarray(i, i + chunkSize)
+        );
+    }
 
-
-    tabHistory.addEventListener("click", () => {
-        tabHistory.classList.add("active");
-        tabApp.classList.remove("active");
-
-        appView.style.display = "none";
-        historyView.style.display = "block";
-
-        renderHistory();
-    });
+    return btoa(binary);
 }
 
-async function initCrypto() {
+function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
 
-    localKeyPair = await crypto.subtle.generateKey(
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+}
+
+function concatArrayBuffers(buffers) {
+    const totalLength = buffers.reduce(
+        (total, buffer) => total + buffer.byteLength,
+        0
+    );
+
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+
+    for (const buffer of buffers) {
+        const bytes = new Uint8Array(buffer);
+        result.set(bytes, offset);
+        offset += bytes.byteLength;
+    }
+
+    return result.buffer;
+}
+
+async function generateKeyPair() {
+    return crypto.subtle.generateKey(
         {
             name: "ECDH",
-            namedCurve: "P-256"
+            namedCurve: "P-256",
         },
         false,
         ["deriveKey"]
     );
 }
 
+async function exportPublicKey(publicKey) {
+    return crypto.subtle.exportKey("jwk", publicKey);
+}
 
-async function exportPublicKey() {
-    return crypto.subtle.exportKey(
+async function importPublicKey(jwk) {
+    return crypto.subtle.importKey(
         "jwk",
-        localKeyPair.publicKey
+        jwk,
+        {
+            name: "ECDH",
+            namedCurve: "P-256",
+        },
+        true,
+        []
     );
 }
 
-
-async function deriveAESKey(peerJwk) {
-
-    if (!peerJwk || peerJwk.kty !== "EC") {
-        throw new Error("Invalid peer public key.");
+async function deriveSharedKey(publicKey) {
+    if (!localKeyPair?.privateKey) {
+        throw new Error("Local key pair is unavailable");
     }
-
-    const peerPubKey = await crypto.subtle.importKey(
-        "jwk",
-        peerJwk,
-        {
-            name: "ECDH",
-            namedCurve: "P-256"
-        },
-        false,
-        []
-    );
 
     return crypto.subtle.deriveKey(
         {
             name: "ECDH",
-            public: peerPubKey
+            public: publicKey,
         },
         localKeyPair.privateKey,
         {
             name: "AES-GCM",
-            length: 256
+            length: 256,
         },
         false,
         ["encrypt", "decrypt"]
     );
 }
 
-
-function generateShortCode() {
-
-    const chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-    const randomValues =
-        new Uint32Array(8);
-
-    crypto.getRandomValues(randomValues);
-
-    let result = "";
-
-    for (let i = 0; i < randomValues.length; i++) {
-        result +=
-            chars[randomValues[i] % chars.length];
+async function encryptData(data) {
+    if (!sharedAESKey) {
+        throw new Error("Encryption key is not available");
     }
 
-    return result;
-}
+    const iv = crypto.getRandomValues(new Uint8Array(12));
 
-
-async function getIceServers() {
-
-    const response = await fetch(
-        "/api/turn-credentials",
+    const encrypted = await crypto.subtle.encrypt(
         {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            },
-            cache: "no-store"
-        }
+            name: "AES-GCM",
+            iv,
+        },
+        sharedAESKey,
+        data
     );
 
+    return {
+        iv: arrayBufferToBase64(iv.buffer),
+        data: arrayBufferToBase64(encrypted),
+    };
+}
+
+async function decryptData(payload) {
+    if (!sharedAESKey) {
+        throw new Error("Decryption key is not available");
+    }
+
+    if (
+        !payload ||
+        typeof payload.iv !== "string" ||
+        typeof payload.data !== "string"
+    ) {
+        throw new Error("Invalid encrypted payload");
+    }
+
+    const iv = new Uint8Array(base64ToArrayBuffer(payload.iv));
+    const encrypted = base64ToArrayBuffer(payload.data);
+
+    if (iv.byteLength !== 12) {
+        throw new Error("Invalid IV");
+    }
+
+    return crypto.subtle.decrypt(
+        {
+            name: "AES-GCM",
+            iv,
+        },
+        sharedAESKey,
+        encrypted
+    );
+}
+
+async function getIceServers() {
+    const response = await fetch("/api/turn-credentials", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+            Accept: "application/json",
+        },
+    });
+
     if (!response.ok) {
-        throw new Error(
-            `TURN configuration failed (${response.status})`
-        );
+        throw new Error("Failed to obtain TURN configuration");
     }
 
     const data = await response.json();
@@ -248,1091 +253,780 @@ async function getIceServers() {
         !Array.isArray(data.iceServers) ||
         data.iceServers.length === 0
     ) {
-        throw new Error(
-            "No ICE servers were returned."
-        );
+        throw new Error("No ICE servers available");
     }
 
     return data.iceServers;
 }
 
-async function initPeer() {
+function resetTransferState() {
+    receiveBuffer = [];
+    incomingMeta = null;
+    receivedBytes = 0;
+    incomingChunks = 0;
+    transferInProgress = false;
+}
+
+function updateUploadProgress(percent, text = "") {
+    if (uploadProgress) {
+        uploadProgress.value = percent;
+        uploadProgress.style.width = `${percent}%`;
+    }
+
+    if (uploadProgressText) {
+        uploadProgressText.textContent =
+            text || `${Math.round(percent)}%`;
+    }
+}
+
+function updateUploadStatus(message) {
+    if (uploadStatus) {
+        uploadStatus.textContent = message;
+    }
+}
+
+function showTransferSection() {
+    if (setupSection) {
+        setupSection.style.display = "none";
+    }
+
+    if (transferSection) {
+        transferSection.style.display = "";
+    }
+}
+
+function showSetupSection() {
+    if (setupSection) {
+        setupSection.style.display = "";
+    }
+
+    if (transferSection) {
+        transferSection.style.display = "none";
+    }
+}
+
+function clearConnectionTimer() {
+    if (connectionTimer) {
+        clearTimeout(connectionTimer);
+        connectionTimer = null;
+    }
+}
+
+function startConnectionTimer() {
+    clearConnectionTimer();
+
+    connectionTimer = setTimeout(() => {
+        if (!conn || !conn.open) {
+            setStatus("Connection timed out", "error");
+        }
+    }, CONNECTION_TIMEOUT);
+}
+
+function saveHistory(item) {
+    try {
+        const history = JSON.parse(
+            localStorage.getItem("zeroshare_history") || "[]"
+        );
+
+        history.unshift({
+            ...item,
+            timestamp: Date.now(),
+        });
+
+        localStorage.setItem(
+            "zeroshare_history",
+            JSON.stringify(history.slice(0, 50))
+        );
+
+        renderHistory();
+    } catch (error) {
+        console.error("History error:", error);
+    }
+}
+
+function renderHistory() {
+    if (!historyList) {
+        return;
+    }
+
+    historyList.replaceChildren();
+
+    let history = [];
 
     try {
+        history = JSON.parse(
+            localStorage.getItem("zeroshare_history") || "[]"
+        );
+    } catch {
+        history = [];
+    }
 
-        updateStatus(false, "Loading...");
+    if (!history.length) {
+        const empty = document.createElement("div");
+        empty.className = "history-empty";
+        empty.textContent = "No transfer history";
+        historyList.appendChild(empty);
+        return;
+    }
 
-        await initCrypto();
+    for (const item of history) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "history-item";
+
+        const name = document.createElement("div");
+        name.className = "history-name";
+        name.textContent = item.name || "Unknown file";
+
+        const details = document.createElement("div");
+        details.className = "history-details";
+
+        const direction = item.direction === "received"
+            ? "Received"
+            : "Sent";
+
+        const size = formatBytes(Number(item.size) || 0);
+        const date = item.timestamp
+            ? new Date(item.timestamp).toLocaleString()
+            : "";
+
+        details.textContent = `${direction} · ${size} · ${date}`;
+
+        wrapper.appendChild(name);
+        wrapper.appendChild(details);
+        historyList.appendChild(wrapper);
+    }
+}
+
+function addReceivedFile(fileData) {
+    if (!receivedFilesEl) {
+        return;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "received-file";
+
+    const name = document.createElement("div");
+    name.className = "received-file-name";
+    name.textContent = fileData.name;
+
+    const details = document.createElement("div");
+    details.className = "received-file-details";
+    details.textContent = `${formatBytes(fileData.size)} · ${fileData.type || "File"}`;
+
+    const downloadBtn = document.createElement("button");
+    downloadBtn.type = "button";
+    downloadBtn.textContent = "Download";
+
+    downloadBtn.addEventListener("click", () => {
+        const url = URL.createObjectURL(fileData.blob);
+
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = fileData.name || "download";
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+
+        setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1000);
+    });
+
+    wrapper.appendChild(name);
+    wrapper.appendChild(details);
+    wrapper.appendChild(downloadBtn);
+
+    receivedFilesEl.prepend(wrapper);
+}
+
+async function sendPublicKey() {
+    if (!conn || !conn.open) {
+        throw new Error("Connection is not open");
+    }
+
+    if (!localKeyPair) {
+        localKeyPair = await generateKeyPair();
+    }
+
+    const publicKey = await exportPublicKey(localKeyPair.publicKey);
+
+    conn.send({
+        type: "KEY",
+        key: publicKey,
+    });
+}
+
+async function handleKeyMessage(message) {
+    if (!message?.key) {
+        throw new Error("Invalid public key");
+    }
+
+    const remotePublicKey = await importPublicKey(message.key);
+
+    sharedAESKey = await deriveSharedKey(remotePublicKey);
+
+    if (!localKeyPair) {
+        localKeyPair = await generateKeyPair();
+    }
+
+    const localPublicKey = await exportPublicKey(localKeyPair.publicKey);
+
+    if (conn?.open) {
+        conn.send({
+            type: "KEY_ACK",
+            key: localPublicKey,
+        });
+    }
+
+    setStatus("Secure connection established", "connected");
+    showTransferSection();
+}
+
+async function sendFile(file) {
+    if (!conn || !conn.open) {
+        throw new Error("No active connection");
+    }
+
+    if (!sharedAESKey) {
+        throw new Error("Secure key exchange is not complete");
+    }
+
+    if (!(file instanceof File)) {
+        throw new Error("Invalid file");
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error("File is too large");
+    }
+
+    transferInProgress = true;
+
+    updateUploadProgress(0, "Preparing...");
+    updateUploadStatus("Encrypting file metadata...");
+
+    const metadata = {
+        name: file.name,
+        size: file.size,
+        fileType: file.type || "application/octet-stream",
+    };
+
+    const encryptedMeta = await encryptData(
+        new TextEncoder().encode(JSON.stringify(metadata))
+    );
+
+    conn.send({
+        type: "META",
+        ...encryptedMeta,
+    });
+
+    let offset = 0;
+
+    while (offset < file.size) {
+        if (!conn || !conn.open) {
+            throw new Error("Connection closed during transfer");
+        }
+
+        const chunk = await file.slice(
+            offset,
+            Math.min(offset + CHUNK_SIZE, file.size)
+        ).arrayBuffer();
+
+        const encryptedChunk = await encryptData(chunk);
+
+        conn.send({
+            type: "CHUNK",
+            ...encryptedChunk,
+        });
+
+        offset += chunk.byteLength;
+
+        const percent = file.size === 0
+            ? 100
+            : (offset / file.size) * 100;
+
+        updateUploadProgress(
+            percent,
+            `${Math.round(percent)}%`
+        );
+
+        updateUploadStatus(
+            `${formatBytes(offset)} / ${formatBytes(file.size)}`
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    conn.send({
+        type: "END",
+    });
+
+    updateUploadProgress(100, "100%");
+    updateUploadStatus("File sent successfully");
+
+    saveHistory({
+        direction: "sent",
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+    });
+
+    transferInProgress = false;
+}
+
+async function handleMetaMessage(message) {
+    const decrypted = await decryptData(message);
+
+    let metadata;
+
+    try {
+        metadata = JSON.parse(
+            new TextDecoder().decode(decrypted)
+        );
+    } catch {
+        throw new Error("Invalid file metadata");
+    }
+
+    if (
+        !metadata ||
+        typeof metadata.name !== "string" ||
+        typeof metadata.size !== "number" ||
+        !Number.isSafeInteger(metadata.size) ||
+        metadata.size < 0 ||
+        metadata.size > MAX_FILE_SIZE
+    ) {
+        throw new Error("Invalid file metadata");
+    }
+
+    incomingMeta = {
+        name: metadata.name.slice(0, 512),
+        size: metadata.size,
+        fileType:
+            typeof metadata.fileType === "string"
+                ? metadata.fileType.slice(0, 255)
+                : "application/octet-stream",
+    };
+
+    receiveBuffer = [];
+    receivedBytes = 0;
+    incomingChunks = 0;
+
+    updateUploadProgress(0, "0%");
+    updateUploadStatus(
+        `Receiving ${incomingMeta.name}...`
+    );
+}
+
+async function handleChunkMessage(message) {
+    if (!incomingMeta) {
+        throw new Error("Received chunk before metadata");
+    }
+
+    const decrypted = await decryptData(message);
+    const chunk = new Uint8Array(decrypted);
+
+    if (chunk.byteLength === 0) {
+        throw new Error("Empty chunk");
+    }
+
+    if (
+        receivedBytes + chunk.byteLength >
+        incomingMeta.size
+    ) {
+        throw new Error("Received data exceeds expected size");
+    }
+
+    receiveBuffer.push(decrypted);
+    receivedBytes += chunk.byteLength;
+    incomingChunks++;
+
+    const percent = incomingMeta.size === 0
+        ? 100
+        : (receivedBytes / incomingMeta.size) * 100;
+
+    updateUploadProgress(
+        percent,
+        `${Math.round(percent)}%`
+    );
+
+    updateUploadStatus(
+        `${formatBytes(receivedBytes)} / ${formatBytes(incomingMeta.size)}`
+    );
+}
+
+async function handleEndMessage() {
+    if (!incomingMeta) {
+        throw new Error("Received transfer completion without metadata");
+    }
+
+    if (receivedBytes !== incomingMeta.size) {
+        throw new Error(
+            `Incomplete transfer: received ${receivedBytes} of ${incomingMeta.size} bytes`
+        );
+    }
+
+    const completeBuffer = concatArrayBuffers(receiveBuffer);
+
+    if (completeBuffer.byteLength !== incomingMeta.size) {
+        throw new Error("Received file size mismatch");
+    }
+
+    const blob = new Blob(
+        [completeBuffer],
+        {
+            type: incomingMeta.fileType || "application/octet-stream",
+        }
+    );
+
+    addReceivedFile({
+        name: incomingMeta.name,
+        size: incomingMeta.size,
+        type: incomingMeta.fileType,
+        blob,
+    });
+
+    saveHistory({
+        direction: "received",
+        name: incomingMeta.name,
+        size: incomingMeta.size,
+        type: incomingMeta.fileType,
+    });
+
+    updateUploadProgress(100, "100%");
+    updateUploadStatus("File received successfully");
+
+    resetTransferState();
+}
+
+async function handleConnectionMessage(message) {
+    if (!message || typeof message.type !== "string") {
+        return;
+    }
+
+    try {
+        switch (message.type) {
+            case "KEY":
+                await handleKeyMessage(message);
+                break;
+
+            case "KEY_ACK":
+                if (!message.key) {
+                    throw new Error("Invalid key acknowledgement");
+                }
+
+                if (!localKeyPair) {
+                    localKeyPair = await generateKeyPair();
+                }
+
+                sharedAESKey = await deriveSharedKey(
+                    await importPublicKey(message.key)
+                );
+
+                clearConnectionTimer();
+                setStatus("Secure connection established", "connected");
+                showTransferSection();
+                break;
+
+            case "META":
+                await handleMetaMessage(message);
+                break;
+
+            case "CHUNK":
+                await handleChunkMessage(message);
+                break;
+
+            case "END":
+                await handleEndMessage();
+                break;
+
+            default:
+                break;
+        }
+    } catch (error) {
+        console.error("Transfer error:", error);
+        updateUploadStatus(error.message || "Transfer failed");
+        setStatus("Transfer error", "error");
+        resetTransferState();
+    }
+}
+
+function setupConnection(connection) {
+    conn = connection;
+
+    clearConnectionTimer();
+    startConnectionTimer();
+
+    conn.binaryType = "arraybuffer";
+
+    conn.on("open", async () => {
+        clearConnectionTimer();
+
+        setStatus("Connected, establishing encryption...", "connecting");
+
+        try {
+            sharedAESKey = null;
+
+            if (!localKeyPair) {
+                localKeyPair = await generateKeyPair();
+            }
+
+            await sendPublicKey();
+
+            showTransferSection();
+        } catch (error) {
+            console.error("Key exchange failed:", error);
+            setStatus("Secure connection failed", "error");
+        }
+    });
+
+    conn.on("data", handleConnectionMessage);
+
+    conn.on("close", () => {
+        clearConnectionTimer();
+
+        if (!transferInProgress) {
+            setStatus("Connection closed", "idle");
+        }
+
+        sharedAESKey = null;
+        conn = null;
+    });
+
+    conn.on("error", error => {
+        console.error("Data connection error:", error);
+        clearConnectionTimer();
+        setStatus("Connection error", "error");
+    });
+}
+
+async function connectToPeer() {
+    const targetPeerId = targetPeerIdEl?.value?.trim();
+
+    if (!targetPeerId) {
+        setStatus("Enter a peer ID", "error");
+        return;
+    }
+
+    if (!peer || peer.destroyed) {
+        setStatus("Peer is not ready", "error");
+        return;
+    }
+
+    if (targetPeerId === myPeerIdEl?.textContent?.trim()) {
+        setStatus("You cannot connect to yourself", "error");
+        return;
+    }
+
+    if (conn?.open) {
+        setStatus("Already connected", "connected");
+        return;
+    }
+
+    try {
+        setStatus("Connecting...", "connecting");
+
+        localKeyPair = await generateKeyPair();
+        sharedAESKey = null;
+
+        const connection = peer.connect(targetPeerId, {
+            reliable: true,
+            serialization: "json",
+        });
+
+        setupConnection(connection);
+    } catch (error) {
+        console.error("Connection failed:", error);
+        setStatus("Connection failed", "error");
+    }
+}
+
+async function initPeer() {
+    try {
+        setStatus("Getting connection servers...", "connecting");
 
         const iceServers = await getIceServers();
 
-        const shortId = generateShortCode();
+        localKeyPair = await generateKeyPair();
 
-        const peerConfig = {
+        peer = new Peer(generateShortCode(), {
             debug: 1,
-
             config: {
                 iceServers,
-                iceTransportPolicy: "all"
-            }
-        };
-
-        peer = new Peer(shortId, peerConfig);
-
+                iceTransportPolicy: "all",
+                iceCandidatePoolSize: 2,
+            },
+        });
 
         peer.on("open", id => {
-
             if (myPeerIdEl) {
                 myPeerIdEl.textContent = id;
             }
 
-            updateStatus(false, "Waiting...");
-
-            renderHistory();
+            setStatus("Ready to connect", "connected");
         });
 
+        peer.on("connection", connection => {
+            setupConnection(connection);
+        });
+
+        peer.on("error", error => {
+            console.error("PeerJS error:", error);
+
+            clearConnectionTimer();
+
+            let message = "Connection error";
+
+            if (error?.type === "peer-unavailable") {
+                message = "Peer not found";
+            } else if (error?.type === "network") {
+                message = "Network error";
+            } else if (error?.type === "server-error") {
+                message = "Signaling server error";
+            }
+
+            setStatus(message, "error");
+        });
 
         peer.on("disconnected", () => {
+            setStatus("Disconnected from signaling server", "error");
 
             if (!peer.destroyed) {
-                updateStatus(false, "Reconnecting...");
                 peer.reconnect();
             }
         });
 
-
-        peer.on("connection", incomingConnection => {
-
-            if (conn && conn.open) {
-                incomingConnection.close();
-                return;
-            }
-
-            conn = incomingConnection;
-
-            setupConnectionHandlers();
-        });
-
-
-        peer.on("error", error => {
-
-            console.error("PeerJS error:", error);
-
-            clearTimeout(connectionTimer);
-
-            if (connectBtn) {
-                connectBtn.textContent = "Connect";
-                connectBtn.disabled = false;
-            }
-
-            updateStatus(false, "Connection error");
-
-            saveHistory(
-                "Connection Error",
-                error?.type || "Unknown error"
-            );
-        });
-
-
         peer.on("close", () => {
-
-            updateStatus(false, "Offline");
+            setStatus("Peer closed", "error");
         });
-
-
     } catch (error) {
-
-        console.error(
-            "Peer initialization failed:",
-            error
-        );
-
-        updateStatus(
-            false,
-            "TURN configuration failed"
-        );
-
-        if (connectBtn) {
-            connectBtn.textContent = "Retry";
-            connectBtn.disabled = false;
-        }
+        console.error("Peer initialization failed:", error);
+        setStatus("Unable to initialize connection", "error");
     }
 }
 
-function setupConnectionHandlers() {
+async function handleFileSelection(event) {
+    const file = event.target.files?.[0];
 
-    if (!conn) return;
+    if (!file) {
+        return;
+    }
 
-    conn.on("open", async () => {
+    if (!conn || !conn.open) {
+        setStatus("Connect to a peer first", "error");
+        event.target.value = "";
+        return;
+    }
 
-        try {
+    if (!sharedAESKey) {
+        setStatus("Secure connection is not ready", "error");
+        event.target.value = "";
+        return;
+    }
 
-            clearTimeout(connectionTimer);
+    if (file.size > MAX_FILE_SIZE) {
+        updateUploadStatus(
+            `Maximum file size is ${formatBytes(MAX_FILE_SIZE)}`
+        );
 
-            updateStatus(true);
+        event.target.value = "";
+        return;
+    }
 
-            if (connectBtn) {
-                connectBtn.textContent = "Connected";
+    if (fileNameEl) {
+        fileNameEl.textContent = file.name;
+    }
+
+    if (fileSizeEl) {
+        fileSizeEl.textContent = formatBytes(file.size);
+    }
+
+    try {
+        await sendFile(file);
+    } catch (error) {
+        console.error("File transfer failed:", error);
+        updateUploadStatus(error.message || "File transfer failed");
+        setStatus("File transfer failed", "error");
+        transferInProgress = false;
+    } finally {
+        event.target.value = "";
+    }
+}
+
+async function copyPeerId() {
+    const id = myPeerIdEl?.textContent?.trim();
+
+    if (!id) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(id);
+
+        const originalText = copyIdBtn?.textContent;
+
+        if (copyIdBtn) {
+            copyIdBtn.textContent = "Copied";
+        }
+
+        setTimeout(() => {
+            if (copyIdBtn) {
+                copyIdBtn.textContent = originalText || "Copy";
             }
+        }, 1500);
+    } catch (error) {
+        console.error("Copy failed:", error);
+    }
+}
 
-            saveHistory(
-                "Connected",
-                `Established secure tunnel with Peer ID: ${conn.peer}`
-            );
+function setupTabs() {
+    tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            const target = tab.dataset.tab;
 
-            const exportedPubKey =
-                await exportPublicKey();
-
-            conn.send({
-                type: "PUB_KEY",
-                key: exportedPubKey
+            tabs.forEach(item => {
+                item.classList.toggle(
+                    "active",
+                    item.dataset.tab === target
+                );
             });
 
-        } catch (error) {
-
-            console.error(
-                "Connection setup error:",
-                error
-            );
-
-            closeConnection();
-        }
-    });
-
-
-    conn.on("data", async message => {
-
-        try {
-
-            if (!message || typeof message !== "object") {
-                return;
-            }
-
-            if (message.type === "PUB_KEY") {
-
-                sharedAESKey =
-                    await deriveAESKey(message.key);
-
-                showTransferUI();
-
-                return;
-            }
-
-            if (message.type === "META") {
-
-                if (!sharedAESKey) {
-                    throw new Error(
-                        "Secure key not established."
-                    );
-                }
-
-                const decryptedMeta =
-                    await decryptJSON(
-                        message.iv,
-                        message.data
-                    );
-
-                validateMetadata(decryptedMeta);
-
-                incomingMeta = decryptedMeta;
-
-                receiveBuffer = [];
-                receivedBytes = 0;
-
-                transferCancelled = false;
-
-                progressContainer.style.display =
-                    "block";
-
-                transferLabel.textContent =
-                    `Receiving: ${incomingMeta.name}`;
-
-                updateProgress(
-                    0,
-                    incomingMeta.size
+            tabViews.forEach(view => {
+                view.classList.toggle(
+                    "active",
+                    view.dataset.view === target
                 );
-
-                return;
-            }
-
-            if (message.type === "CHUNK") {
-
-                if (
-                    !sharedAESKey ||
-                    !incomingMeta
-                ) {
-                    throw new Error(
-                        "Invalid transfer state."
-                    );
-                }
-
-                const decryptedBuffer =
-                    await decryptBuffer(
-                        message.iv,
-                        message.data
-                    );
-
-                if (
-                    decryptedBuffer.byteLength !==
-                    message.originalSize
-                ) {
-                    throw new Error(
-                        "Chunk size verification failed."
-                    );
-                }
-
-                receiveBuffer.push(
-                    decryptedBuffer
-                );
-
-                receivedBytes +=
-                    decryptedBuffer.byteLength;
-
-                if (
-                    receivedBytes >
-                    incomingMeta.size
-                ) {
-                    throw new Error(
-                        "Received more data than expected."
-                    );
-                }
-
-                updateProgress(
-                    receivedBytes,
-                    incomingMeta.size
-                );
-
-                return;
-            }
-
-            if (message.type === "EOF") {
-
-                if (
-                    !incomingMeta ||
-                    !sharedAESKey
-                ) {
-                    throw new Error(
-                        "Invalid transfer completion."
-                    );
-                }
-
-                if (
-                    receivedBytes !==
-                    incomingMeta.size
-                ) {
-                    throw new Error(
-                        "File size verification failed."
-                    );
-                }
-
-                transferLabel.textContent =
-                    "Preparing file...";
-
-                const blob = new Blob(
-                    receiveBuffer,
-                    {
-                        type:
-                            incomingMeta.fileType ||
-                            "application/octet-stream"
-                    }
-                );
-
-                createDownloadableFile(
-                    blob,
-                    incomingMeta.name
-                );
-
-                saveHistory(
-                    "Received File",
-                    `Name: ${incomingMeta.name}, Size: ${formatBytes(incomingMeta.size)}`
-                );
-
-                transferLabel.textContent =
-                    "Complete!";
-
-                progressBar.style.background =
-                    "#10b981";
-
-                setTimeout(() => {
-
-                    progressContainer.style.display =
-                        "none";
-
-                }, 3000);
-
-                cleanupTransfer();
-
-                return;
-            }
-
-
-            if (message.type === "ERROR") {
-
-                throw new Error(
-                    message.message ||
-                    "Remote transfer error."
-                );
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Incoming data error:",
-                error
-            );
-
-            transferLabel.textContent =
-                "Transfer failed.";
-
-            saveHistory(
-                "Transfer Error",
-                error.message
-            );
-
-            cleanupTransfer();
-        }
-    });
-
-
-    conn.on("close", () => {
-
-        clearTimeout(connectionTimer);
-
-        updateStatus(false);
-
-        cleanupTransfer();
-
-        if (connectBtn) {
-            connectBtn.textContent = "Connect";
-            connectBtn.disabled = false;
-        }
-
-    });
-
-
-    conn.on("error", error => {
-
-        console.error(
-            "Data connection error:",
-            error
-        );
-
-        updateStatus(
-            false,
-            "Connection error"
-        );
+            });
+        });
     });
 }
 
-async function encryptBuffer(buffer) {
-
-    const iv =
-        crypto.getRandomValues(
-            new Uint8Array(12)
-        );
-
-    const encrypted =
-        await crypto.subtle.encrypt(
-            {
-                name: "AES-GCM",
-                iv
-            },
-            sharedAESKey,
-            buffer
-        );
-
-    return {
-        iv: Array.from(iv),
-        data: encrypted
-    };
+if (connectBtn) {
+    connectBtn.addEventListener("click", connectToPeer);
 }
 
-
-async function decryptBuffer(ivArray, encryptedData) {
-
-    if (
-        !Array.isArray(ivArray) ||
-        ivArray.length !== 12
-    ) {
-        throw new Error(
-            "Invalid encryption IV."
-        );
-    }
-
-    const iv =
-        new Uint8Array(ivArray);
-
-    return crypto.subtle.decrypt(
-        {
-            name: "AES-GCM",
-            iv
-        },
-        sharedAESKey,
-        encryptedData
-    );
-}
-
-
-async function encryptJSON(object) {
-
-    const encoded =
-        new TextEncoder().encode(
-            JSON.stringify(object)
-        );
-
-    return encryptBuffer(encoded);
-}
-
-
-async function decryptJSON(iv, encryptedData) {
-
-    const decrypted =
-        await decryptBuffer(
-            iv,
-            encryptedData
-        );
-
-    const text =
-        new TextDecoder().decode(
-            decrypted
-        );
-
-    return JSON.parse(text);
-}
-
-
-
-function validateMetadata(meta) {
-
-    if (!meta || typeof meta !== "object") {
-        throw new Error(
-            "Invalid file metadata."
-        );
-    }
-
-    if (
-        typeof meta.name !== "string" ||
-        !meta.name ||
-        meta.name.length > 255
-    ) {
-        throw new Error(
-            "Invalid filename."
-        );
-    }
-
-    if (
-        !Number.isSafeInteger(meta.size) ||
-        meta.size < 0 ||
-        meta.size > MAX_FILE_SIZE
-    ) {
-        throw new Error(
-            "Invalid file size."
-        );
-    }
-
-    if (
-        typeof meta.fileType !== "string" ||
-        meta.fileType.length > 255
-    ) {
-        throw new Error(
-            "Invalid file type."
-        );
-    }
+if (copyIdBtn) {
+    copyIdBtn.addEventListener("click", copyPeerId);
 }
 
 if (fileInput) {
+    fileInput.addEventListener("change", handleFileSelection);
+}
 
-    fileInput.addEventListener(
-        "change",
-        async event => {
+if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", () => {
+        localStorage.removeItem("zeroshare_history");
+        renderHistory();
+    });
+}
 
-            const file =
-                event.target.files?.[0];
-
-            if (!file) return;
-
-            if (!sharedAESKey || !conn || !conn.open) {
-
-                alert(
-                    "Please establish a secure connection first."
-                );
-
-                fileInput.value = "";
-                return;
-            }
-
-            if (file.size > MAX_FILE_SIZE) {
-
-                alert(
-                    "This file is too large."
-                );
-
-                fileInput.value = "";
-                return;
-            }
-
-            try {
-
-                transferCancelled = false;
-
-                progressContainer.style.display =
-                    "block";
-
-                transferLabel.textContent =
-                    `Preparing: ${file.name}`;
-
-                progressBar.style.background =
-                    "var(--gradient-brand)";
-
-                const metadata = {
-
-                    name: file.name,
-
-                    size: file.size,
-
-                    fileType:
-                        file.type ||
-                        "application/octet-stream"
-                };
-
-                const encryptedMeta =
-                    await encryptJSON(metadata);
-
-                conn.send({
-                    type: "META",
-                    iv: encryptedMeta.iv,
-                    data: encryptedMeta.data
-                });
-
-
-                /* =========================================
-                   FILE CHUNKS
-                ========================================= */
-
-                let offset = 0;
-
-                while (
-                    offset < file.size
-                ) {
-
-                    if (
-                        !conn ||
-                        !conn.open
-                    ) {
-                        throw new Error(
-                            "Connection closed during transfer."
-                        );
-                    }
-
-                    const chunk =
-                        file.slice(
-                            offset,
-                            Math.min(
-                                offset + CHUNK_SIZE,
-                                file.size
-                            )
-                        );
-
-                    const arrayBuffer =
-                        await chunk.arrayBuffer();
-
-                    const encrypted =
-                        await encryptBuffer(
-                            arrayBuffer
-                        );
-
-                    conn.send({
-                        type: "CHUNK",
-
-                        iv: encrypted.iv,
-
-                        data: encrypted.data,
-
-                        originalSize:
-                            arrayBuffer.byteLength
-                    });
-
-                    offset +=
-                        arrayBuffer.byteLength;
-
-                    updateProgress(
-                        offset,
-                        file.size
-                    );
-
-                    /*
-                     * Small yield prevents the browser
-                     * event loop from being monopolized.
-                     */
-                    await sleep(4);
-                }
-
-
-                /* =========================================
-                   END OF FILE
-                ========================================= */
-
-                conn.send({
-                    type: "EOF"
-                });
-
-                saveHistory(
-                    "Sent File",
-                    `Name: ${file.name}, Size: ${formatBytes(file.size)}`
-                );
-
-                transferLabel.textContent =
-                    "Sent successfully!";
-
-                progressBar.style.background =
-                    "#10b981";
-
-                fileInput.value = "";
-
-
-            } catch (error) {
-
-                console.error(
-                    "File transfer failed:",
-                    error
-                );
-
-                transferLabel.textContent =
-                    "Transfer failed.";
-
-                saveHistory(
-                    "Transfer Error",
-                    error.message
-                );
-
-                fileInput.value = "";
-            }
+if (targetPeerIdEl) {
+    targetPeerIdEl.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            connectToPeer();
         }
-    );
+    });
 }
 
-
-/* =========================================================
-   CONNECT BUTTON
-========================================================= */
-
-if (connectBtn) {
-
-    connectBtn.addEventListener(
-        "click",
-        () => {
-
-            if (!peer || peer.destroyed) {
-
-                alert(
-                    "Peer connection is not ready."
-                );
-
-                return;
-            }
-
-            const targetId =
-                targetPeerIdInput
-                    ?.value
-                    ?.trim()
-                    ?.toUpperCase();
-
-            if (!targetId) {
-                return;
-            }
-
-            if (
-                myPeerIdEl &&
-                targetId ===
-                myPeerIdEl.textContent
-            ) {
-
-                alert(
-                    "You cannot connect to yourself."
-                );
-
-                return;
-            }
-
-            if (conn && conn.open) {
-
-                alert(
-                    "You are already connected."
-                );
-
-                return;
-            }
-
-
-            connectBtn.textContent =
-                "Connecting...";
-
-            connectBtn.disabled = true;
-
-            updateStatus(
-                false,
-                "Connecting..."
-            );
-
-
-            try {
-
-                conn = peer.connect(
-                    targetId,
-                    {
-                        reliable: true
-                    }
-                );
-
-                setupConnectionHandlers();
-
-
-                clearTimeout(
-                    connectionTimer
-                );
-
-                connectionTimer =
-                    setTimeout(() => {
-
-                        if (
-                            !conn ||
-                            !conn.open
-                        ) {
-
-                            if (conn) {
-                                conn.close();
-                            }
-
-                            updateStatus(
-                                false,
-                                "Connection timeout"
-                            );
-
-                            connectBtn.textContent =
-                                "Connect";
-
-                            connectBtn.disabled =
-                                false;
-                        }
-
-                    }, CONNECTION_TIMEOUT);
-
-
-            } catch (error) {
-
-                console.error(
-                    "Connection failed:",
-                    error
-                );
-
-                connectBtn.textContent =
-                    "Connect";
-
-                connectBtn.disabled =
-                    false;
-            }
-        }
-    );
-}
-
-
-/* =========================================================
-   COPY PEER ID
-========================================================= */
-
-if (copyIdBtn) {
-
-    copyIdBtn.addEventListener(
-        "click",
-        async () => {
-
-            const peerId =
-                myPeerIdEl?.textContent?.trim();
-
-            if (!peerId) return;
-
-            try {
-
-                await navigator.clipboard.writeText(
-                    peerId
-                );
-
-                const originalIcon =
-                    copyIdBtn.innerHTML;
-
-                copyIdBtn.innerHTML =
-                    '<i data-lucide="check" style="color:#10b981;"></i>';
-
-                if (window.lucide) {
-                    lucide.createIcons();
-                }
-
-                setTimeout(() => {
-
-                    copyIdBtn.innerHTML =
-                        originalIcon;
-
-                    if (window.lucide) {
-                        lucide.createIcons();
-                    }
-
-                }, 2000);
-
-            } catch (error) {
-
-                console.error(
-                    "Clipboard error:",
-                    error
-                );
-            }
-        }
-    );
-}
-
-
-/* =========================================================
-   UI STATUS
-========================================================= */
-
-function updateStatus(
-    isConnected,
-    customText = null
-) {
-
-    if (!statusDot) return;
-
-    if (isConnected) {
-
-        statusDot.className =
-            "dot connected";
-
-    } else {
-
-        statusDot.className =
-            "dot disconnected";
-    }
-
-    if (connectionStatus) {
-
-        /*
-         * Preserve the dot and only update text nodes.
-         */
-        const textNode =
-            Array.from(
-                connectionStatus.childNodes
-            ).find(
-                node =>
-                    node.nodeType ===
-                    Node.TEXT_NODE
-            );
-
-        if (textNode) {
-
-            textNode.textContent =
-                ` ${customText ||
-                    (isConnected
-                        ? "Connected"
-                        : "Waiting...")}`;
-        }
-    }
-}
-
-
-/* =========================================================
-   TRANSFER UI
-========================================================= */
-
-function showTransferUI() {
-
-    if (setupSection) {
-        setupSection.style.display =
-            "none";
-    }
-
-    if (transferSection) {
-        transferSection.style.display =
-            "block";
-    }
-}
-
-
-function updateProgress(
-    current,
-    total
-) {
-
-    const percent =
-        total === 0
-            ? 100
-            : Math.min(
-                Math.round(
-                    (current / total) * 100
-                ),
-                100
-            );
-
-    if (progressBar) {
-        progressBar.style.width =
-            `${percent}%`;
-    }
-
-    if (transferPercent) {
-        transferPercent.textContent =
-            `${percent}%`;
-    }
-}
-
-
-/* =========================================================
-   DOWNLOAD
-========================================================= */
-
-function createDownloadableFile(
-    blob,
-    filename
-) {
-
-    const url =
-        URL.createObjectURL(blob);
-
-    const fileItem =
-        document.createElement("div");
-
-    fileItem.className =
-        "received-item";
-
-    const link =
-        document.createElement("a");
-
-    link.href = url;
-    link.download = filename;
-
-    const icon =
-        document.createElement("i");
-
-    icon.setAttribute(
-        "data-lucide",
-        "file-check"
-    );
-
-    link.appendChild(icon);
-
-    /*
-     * Never insert the filename through
-     * innerHTML.
-     */
-    link.appendChild(
-        document.createTextNode(
-            ` ${filename}`
-        )
-    );
-
-    fileItem.appendChild(link);
-
-    receivedFilesDiv?.appendChild(
-        fileItem
-    );
-
-    if (window.lucide) {
-        lucide.createIcons();
-    }
-
-    /*
-     * Keep the object URL alive until
-     * the user has had time to download.
-     */
-    setTimeout(() => {
-
-        URL.revokeObjectURL(url);
-
-    }, 10 * 60 * 1000);
-}
-
-
-/* =========================================================
-   CLEANUP
-========================================================= */
-
-function cleanupTransfer() {
-
-    receiveBuffer = [];
-    incomingMeta = null;
-    receivedBytes = 0;
-    transferCancelled = false;
-}
-
-
-function closeConnection() {
-
-    clearTimeout(connectionTimer);
-
-    try {
-        conn?.close();
-    } catch {}
-
-    conn = null;
-    sharedAESKey = null;
-
-    cleanupTransfer();
-
-    updateStatus(false);
-
-    if (connectBtn) {
-
-        connectBtn.textContent =
-            "Connect";
-
-        connectBtn.disabled =
-            false;
-    }
-}
-
-
-/* =========================================================
-   UTILITIES
-========================================================= */
-
-function sleep(ms) {
-
-    return new Promise(
-        resolve => setTimeout(resolve, ms)
-    );
-}
-
-
-function formatBytes(bytes) {
-
-    if (bytes === 0) {
-        return "0 B";
-    }
-
-    const units = [
-        "B",
-        "KB",
-        "MB",
-        "GB",
-        "TB"
-    ];
-
-    const index =
-        Math.floor(
-            Math.log(bytes) /
-            Math.log(1024)
-        );
-
-    return `${(
-        bytes /
-        Math.pow(1024, index)
-    ).toFixed(index === 0 ? 0 : 2)} ${units[index]}`;
-}
-
-
-/* =========================================================
-   START APPLICATION
-========================================================= */
-
+setupTabs();
 renderHistory();
-
-if (myPeerIdEl) {
-    initPeer();
-}
+showSetupSection();
+initPeer();
