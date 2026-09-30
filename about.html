@@ -1112,27 +1112,49 @@
                     <strong>500 MB</strong>
                     <span>monthly trial allowance</span>
                 </div>
-
-            </div>
 <div class="turn-usage-card" id="turn-usage-card">
     <div class="turn-usage-header">
         <div>
-            <span class="turn-usage-eyebrow">Live infrastructure usage</span>
+            <span class="turn-usage-eyebrow">
+                Live infrastructure usage
+            </span>
+
             <h3>TURN usage this billing cycle</h3>
         </div>
 
-        <span class="turn-usage-status" id="turn-usage-status">
+        <span
+            class="turn-usage-status"
+            id="turn-usage-status"
+        >
             Checking...
+        </span>
+    </div>
+
+    <div
+        class="turn-usage-limit-notice"
+        id="turn-usage-limit-notice"
+        hidden
+    >
+        <strong>Usage limit reached</strong>
+
+        <span id="turn-usage-limit-message">
+            You are viewing previously retrieved usage data.
         </span>
     </div>
 
     <div class="turn-usage-main">
         <div class="turn-usage-numbers">
             <strong id="turn-usage-used">-- MB</strong>
-            <span id="turn-usage-quota">/ -- MB</span>
+
+            <span id="turn-usage-quota">
+                / -- MB
+            </span>
         </div>
 
-        <span class="turn-usage-percentage" id="turn-usage-percentage">
+        <span
+            class="turn-usage-percentage"
+            id="turn-usage-percentage"
+        >
             --%
         </span>
     </div>
@@ -1163,11 +1185,15 @@
         </span>
     </div>
 
-    <p class="turn-usage-note" id="turn-usage-note">
-        TURN is used when WebRTC requires relay infrastructure to establish
-        a connection.
+    <p
+        class="turn-usage-note"
+        id="turn-usage-note"
+    >
+        TURN is used when WebRTC requires relay infrastructure
+        to establish a connection.
     </p>
 </div>
+            
             <style>
                 .turn-usage-card {
     position: relative;
