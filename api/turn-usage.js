@@ -27,7 +27,8 @@ export default async function handler(req, res) {
             method: "GET",
             headers: {
                 Accept: "application/json"
-            }
+            },
+            cache: "no-store"
         });
 
         const data = await response.json().catch(() => null);
@@ -55,10 +56,12 @@ export default async function handler(req, res) {
         const usageMB = usageInGB * 1000;
         const quotaMB = quotaInGB * 1000;
         const remainingMB = Math.max(0, quotaMB - usageMB);
+
         const percentage = Math.min(
             100,
             Math.max(0, (usageMB / quotaMB) * 100)
         );
+
         const overageMB = Math.max(0, overageInGB * 1000);
 
         let status = "available";
@@ -71,15 +74,23 @@ export default async function handler(req, res) {
             status = "warning";
         }
 
+        res.setHeader(
+            "Cache-Control",
+            "no-store, no-cache, must-revalidate, proxy-revalidate"
+        );
+
         return res.status(200).json({
             usageMB: Number(usageMB.toFixed(2)),
             quotaMB: Number(quotaMB.toFixed(2)),
             remainingMB: Number(remainingMB.toFixed(2)),
             percentage: Number(percentage.toFixed(2)),
             overageMB: Number(overageMB.toFixed(2)),
-            status
+            status,
+            fetchedAt: new Date().toISOString()
         });
-    } catch {
+    } catch (error) {
+        console.error("TURN usage error:", error);
+
         return res.status(502).json({
             error: "TURN usage service unavailable"
         });
